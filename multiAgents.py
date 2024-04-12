@@ -75,7 +75,31 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        foodPositions = newFood.asList()
+        
+        # If there is no more food left, we won!
+        if (len(foodPositions) == 0):
+            return 100000000
+        
+        # Calculates the absolute distance from pacman to all ghosts
+        ghostPositions = successorGameState.getGhostPositions()
+        distanceFromGhosts = [manhattanDistance(position, newPos) for position in ghostPositions]
+
+        # Don't let pacman get too close to the ghosts or it could end up trapped
+        for distance in distanceFromGhosts:
+            if (distance < 2):
+                return -100000000
+        
+        # Calculates the absolute distance from pacman to all food dots
+        distanceFromNewFood = [manhattanDistance(position, newPos) for position in foodPositions]
+
+        # This number will increase as pacman gets closer to food dots
+        closerToFoodDots = 1000/sum(distanceFromNewFood)
+        # This number will increase as food runs out
+        amountOfFoodLeft = 10000/len(distanceFromNewFood)
+
+        # As food runs out and/or pacman gets closer to food dots, the score (probability of success) is higher
+        return closerToFoodDots + amountOfFoodLeft
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
