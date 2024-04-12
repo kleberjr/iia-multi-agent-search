@@ -19,6 +19,9 @@ import random, util
 from game import Agent
 from pacman import GameState
 
+PACMAN_IDX = 0
+INITIAL_DEPTH = 0
+
 class ReflexAgent(Agent):
     """
     A reflex agent chooses an action at each choice point by examining
@@ -160,9 +163,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        PACMAN_IDX = 0
-        INITIAL_DEPTH = 0
-
         def minimax(currentDepth, agentIdx, gameState):
             # Increase depth if all agents finished their turn
             if agentIdx >= gameState.getNumAgents():
@@ -216,12 +216,73 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     Your minimax agent with alpha-beta pruning (question 3)
     """
 
+    def alphaBeta(self, currentDepth, agentIdx, gameState, alpha, beta):
+        # Increase depth if all agents finished their turn
+        if agentIdx >= gameState.getNumAgents():
+            agentIdx = PACMAN_IDX
+            currentDepth += 1
+
+        # Return the value of evaluationFunction if max depth is reached
+        if currentDepth == self.depth:
+            return None, self.evaluationFunction(gameState)
+        
+        # Initialize best_score and best_action with None
+        highestScore, bestAction = None, None
+
+        # Pacman's turn
+        if agentIdx == PACMAN_IDX:  
+            for action in gameState.getLegalActions(agentIdx):
+                nextGameState = gameState.generateSuccessor(agentIdx, action)
+                
+                # Get the score for the next agent
+                result = self.alphaBeta(currentDepth, agentIdx + 1, nextGameState, alpha, beta)
+                successorScore = result[1]
+
+                # Updates highest score so far
+                if (highestScore is None) or (successorScore > highestScore):
+                    highestScore = successorScore
+                    bestAction = action
+                
+                # Update the value of alpha
+                alpha = max(alpha, successorScore)
+                
+                # Stop if condition is met
+                if alpha > beta:
+                    break
+        
+        # Ghost's turn
+        else:  
+            for action in gameState.getLegalActions(agentIdx):
+                nextGameState = gameState.generateSuccessor(agentIdx, action)
+                
+                # Get the score for the next agent
+                result = self.alphaBeta(currentDepth, agentIdx + 1, nextGameState, alpha, beta)
+                successorScore = result[1]
+                
+                # Updates highest score so far
+                if (highestScore is None) or (successorScore < highestScore):
+                    highestScore = successorScore
+                    bestAction = action
+                
+                beta = min(beta, successorScore)
+                
+                # Stop if condition is met
+                if alpha > beta:
+                    break
+
+        # Reached leaf node
+        if highestScore is None:
+            return None, self.evaluationFunction(gameState)
+        
+        return bestAction, highestScore  # Return the best_action and highestScore
+
     def getAction(self, gameState: GameState):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        INFINITY = float('inf')
+        return self.alphaBeta(INITIAL_DEPTH, PACMAN_IDX, gameState, -INFINITY, INFINITY)[0]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
