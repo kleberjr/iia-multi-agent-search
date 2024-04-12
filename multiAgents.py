@@ -160,7 +160,56 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        PACMAN_IDX = 0
+        INITIAL_DEPTH = 0
+
+        def minimax(currentDepth, agentIdx, gameState):
+            # Increase depth if all agents finished their turn
+            if agentIdx >= gameState.getNumAgents():
+                agentIdx = PACMAN_IDX
+                currentDepth += 1
+            
+            # Reached max depth
+            if currentDepth == self.depth:
+                return None, self.evaluationFunction(gameState)
+            
+            highestScore, bestAction = None, None
+            legalActions = gameState.getLegalActions(agentIdx)
+
+            # Pacman's turn
+            if agentIdx == 0:
+                for action in legalActions: 
+                    nextGameState = gameState.generateSuccessor(agentIdx, action)
+                    
+                    # Get the minimax score for the next agent
+                    result = minimax(currentDepth, agentIdx + 1, nextGameState)
+                    successorScore = result[1]
+
+                    # Updates highest score so far
+                    if (highestScore is None) or (successorScore > highestScore):
+                        highestScore = successorScore
+                        bestAction = action
+
+            # Ghost's turn
+            else:
+                for action in legalActions:
+                    nextGameState = gameState.generateSuccessor(agentIdx, action)
+
+                    # Get the minimax score for the next agent
+                    result = minimax(currentDepth, agentIdx + 1, nextGameState)
+                    successorScore = result[1]
+
+                    if (highestScore is None) or (successorScore < highestScore):
+                        highestScore = successorScore
+                        bestAction = action
+            
+            # Reached leaf node
+            if highestScore is None:
+                return None, self.evaluationFunction(gameState)
+            
+            return bestAction, highestScore 
+
+        return minimax(INITIAL_DEPTH, PACMAN_IDX, gameState)[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
