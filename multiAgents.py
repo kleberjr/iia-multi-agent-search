@@ -96,10 +96,10 @@ class ReflexAgent(Agent):
         # This number will increase as pacman gets closer to food dots
         closerToFoodDots = 1000/sum(distanceFromNewFood)
         # This number will increase as food runs out
-        amountOfFoodLeft = 10000/len(distanceFromNewFood)
+        lessFoodLeft = 10000/len(distanceFromNewFood)
 
         # As food runs out and/or pacman gets closer to food dots, the score (probability of success) is higher
-        return closerToFoodDots + amountOfFoodLeft
+        return closerToFoodDots + lessFoodLeft
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
