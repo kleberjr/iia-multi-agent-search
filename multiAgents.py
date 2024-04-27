@@ -21,6 +21,7 @@ from pacman import GameState
 
 PACMAN_IDX = 0
 INITIAL_DEPTH = 0
+INFINITY = float("inf")
 
 class ReflexAgent(Agent):
     """
@@ -281,7 +282,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        INFINITY = float('inf')
         return self.alphaBeta(INITIAL_DEPTH, PACMAN_IDX, gameState, -INFINITY, INFINITY)[0]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -297,17 +297,94 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def maxValue(gameState, depth):
+            legalActions = gameState.getLegalActions(PACMAN_IDX)
+
+            if (len(legalActions) == 0) or gameState.isWin() or gameState.isLose() or (depth == self.depth):
+                return self.evaluationFunction(gameState), None
+
+            successRate = -INFINITY
+            bestAction = None
+
+            for action in legalActions:
+                result = expValue(gameState.generateSuccessor(0, action), 1, depth)
+                value = result[0]
+                
+                if successRate < value:
+                    successRate, bestAction = value, action
+                                                                                                   
+            return successRate, bestAction
+
+        def expValue(gameState, agentIdx, depth):
+            legalActions = gameState.getLegalActions(agentIdx)
+
+            if len(legalActions) == 0:
+                return self.evaluationFunction(gameState), None
+
+            successRate = 0
+
+            for action in legalActions:
+                if agentIdx == gameState.getNumAgents() - 1:
+                    result = maxValue(gameState.generateSuccessor(agentIdx, action), depth + 1)
+                else:
+                    result = expValue(gameState.generateSuccessor(agentIdx, action), agentIdx + 1, depth)
+                
+                value = result[0]
+
+                probability = value / len(legalActions)
+                successRate += probability
+
+            return successRate, None
+
+        return maxValue(gameState, INITIAL_DEPTH)[1]
 
 def betterEvaluationFunction(currentGameState: GameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: Essa função leva em consideração não somente a distância entre o pacman, os fantamas,
+    os fantasmas assustados, a comida e as capsulas de poder, cada uma com uma ordem de importância 
+    distinta:
+        dist. capsulas -> qtd. comida restante -> dist. comida = dist. fantasma = dist. fantasma assustado
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    pacmanPosition = currentGameState.getPacmanPosition()
+    ghostStates = currentGameState.getGhostStates()
+    foodPositions = currentGameState.getFood()
+    powerCapsulesPositions = currentGameState.getCapsules()
+
+    if currentGameState.isLose():
+        return -INFINITY
+    if currentGameState.isWin():
+        return INFINITY
+    
+    foodDistanceList = []
+    for position in foodPositions.asList():
+        foodDistanceList += [util.manhattanDistance(position, pacmanPosition)]
+    
+    minFoodDistance = min(foodDistanceList)
+    
+    ghostDistanceList = []
+    scaredGhostsDistanceList = []
+    for ghost in ghostStates:
+        if ghost.scaredTimer == 0 :
+            ghostDistanceList.append(util.manhattanDistance(pacmanPosition, ghost.getPosition()))
+        elif ghost.scaredTimer > 0:
+            scaredGhostsDistanceList.append(util.manhattanDistance(pacmanPosition, ghost.getPosition()))
+    
+    minGhostDistance = -1
+    if len(ghostDistanceList) > 0:
+        minGhostDistance = min(ghostDistanceList)
+    
+    minScaredGhostsDistanceList = -1
+    if len(scaredGhostsDistanceList) > 0:
+        minScaredGhostsDistanceList = min(scaredGhostsDistanceList)
+    
+    score = scoreEvaluationFunction(currentGameState)
+    score -= 1.5 * minFoodDistance + 2 * (1.0/minGhostDistance) + 2 * minScaredGhostsDistanceList + 20 * len(powerCapsulesPositions) + 4 * len(foodPositions.asList())
+    
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
